@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -9,45 +10,132 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Packaging;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml;
 
 namespace ExcelOpenXmlReader
 {
-    public class ExcelOpenXmlReader
+    public class OpenXmlWorkbook
     {
-        private Regex alphaRegex;
-        private Regex numRegex;
-        private string path;
-        private List<string> SharedStrings;
-        private List<ExcelOpenXmlRow> MyRows;
-        public ExcelOpenXmlReader(string path)
+        public List<string> SharedStrings { get; set; }
+        private SpreadsheetDocument Document { get; set; }
+        public BlockingCollection<OpenXmlWorksheet> OpenXmlWorksheets { get; set; }
+        private MemoryStream ms;
+        public OpenXmlWorkbook(string path)
         {
-            this.path = path;
-            alphaRegex = new Regex("[a-zA-Z]+", RegexOptions.Compiled);
-            numRegex = new Regex("[0-9]+", RegexOptions.Compiled);
-            
-            SpreadsheetDocument doc = SpreadsheetDocument.Open(File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), false);
+            LoadStream(path);
+            InitializeDocument();
+            InitializeSharedStrings();
+            OpenXmlWorksheets = new BlockingCollection<OpenXmlWorksheet>();
+            Document.WorkbookPart.WorksheetParts.ToList().ForEach(part => {ThreadMethod(part);});
+        }
+        private void InitializeSharedStrings()
+        {
             SharedStrings =
                 (from item in
-                    doc.WorkbookPart.GetPartsOfType<SharedStringTablePart>()
+                    Document.WorkbookPart.GetPartsOfType<SharedStringTablePart>()
                         .First()
                         .SharedStringTable.Descendants<SharedStringItem>()
-                    select item.InnerText).ToList();
-            var Rows = doc.WorkbookPart.WorksheetParts.First().Worksheet.Descendants<Row>();
-            MyRows = new List<ExcelOpenXmlRow>(Rows.Count());
-            foreach (var row in Rows)
-            {
-                var cells = row.Descendants<Cell>();
-                ExcelOpenXmlRow myRow = new ExcelOpenXmlRow(cells, SharedStrings);
-                MyRows.Add(myRow);
-            }
-
-
+                 select item.InnerText).ToList();
         }
-
-        public DataSet AsDataSet()
+        private void AddWorksheet(OpenXmlWorksheet sheet)
         {
-            return new DataSet();
+            OpenXmlWorksheets.Add(sheet);
         }
+        private void LoadStream(string path)
+        {
+            using (var fs = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                ms = new MemoryStream();
+                fs.CopyTo(ms);
+                
+
+            }
+        }
+        private void InitializeDocument()
+        {
+            Document = SpreadsheetDocument.Open(ms, false);
+        }
+        private void ThreadMethod(WorksheetPart param)
+        {
+            
+            try
+            {
+                var ws = new OpenXmlWorksheet(param, SharedStrings);
+                OpenXmlWorksheets.Add(ws);
+            }
+            catch (XmlException)
+            {
+                return;
+            }
+            catch (InvalidDataException)
+            {
+                return;
+            }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
+        }
+    }
+    public class OpenXmlWorksheet
+    {
+        public List<string> SharedStrings { get; set; }
+        public WorksheetPart WorksheetPart { get; set; }
+        private BlockingCollection<ExcelOpenXmlRow> MyRows { get; set; }
+        public DataTable DataTable { get; private set; }
+        public OpenXmlWorksheet(WorksheetPart part, List<string> sharedStrings)
+        {
+            WorksheetPart = part;
+            SharedStrings = sharedStrings;
+            InitializeMyRows();
+            WorksheetPart.Worksheet.Descendants<Row>().AsParallel().ForAll(row =>
+            {
+                AddRow(row);
+            });
+
+
+        }
+        private void AddRow(Row descendant)
+        {
+            MyRows.Add(new ExcelOpenXmlRow(descendant.Descendants<Cell>(), SharedStrings));
+        }
+        private void InitializeMyRows()
+        {
+            var matches = CompiledRegexPatterns.ParseDeminsions.Matches(WorksheetPart.Worksheet.Descendants<SheetDimension>().First().Reference.InnerText);
+            MyRows = new BlockingCollection<ExcelOpenXmlRow>(int.Parse(matches[1].Value) - int.Parse(matches[0].Value));
+        }
+        public static async Task InitAsync(WorksheetPart part, List<string> sharedString, Action<OpenXmlWorksheet> Callback)
+        {
+            
+            var t =  Task.Factory.StartNew(() =>
+            {
+                try
+                {
+                    var ws = new OpenXmlWorksheet(part, sharedString);
+                    return ws;
+                }
+                catch(XmlException)
+                {
+                    return null;
+                }
+                catch(InvalidDataException)
+                {
+                    return null;
+                }
+                catch(InvalidOperationException)
+                {
+                    return null;
+                }
+                
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            await t;
+            Callback.Invoke(t.Result);
+            
+            
+        }
+
 
     }
 
@@ -59,6 +147,8 @@ namespace ExcelOpenXmlReader
         
         public ExcelOpenXmlRow(IEnumerable<Cell> cells, List<string> SharedStrings )
         {
+            if (!cells.Any())
+                return;
             this.SharedStrings = SharedStrings;
             TheCells = (from cell in cells select new TheCell(cell, SharedStrings)).ToList();
             ItemList = new List<object>(TheCells.Last().Column);
@@ -80,45 +170,18 @@ namespace ExcelOpenXmlReader
             throw new NotImplementedException();
         }
     }
-
     
-
-    public struct NumLetters
+    public static class CompiledRegexPatterns
     {
-        public IEnumerable<char> Letters
-        {
-            get
-            {
-                for (char i = 'A'; i <= 'Z'; i++)
-                {
-                    for (int j = 0; j <= 1; j++)
-                    {
-                        if(j==0)
-                            yield return i;
-                        else
-                        {
-                            yield return i.ToString().ToLowerInvariant().ToCharArray()[0];
-                        }
-                    }
+        public static Regex ParseDeminsions = new Regex("[0-9]+", RegexOptions.Compiled);
+    }
 
-                }
-                for (char i = 'a'; i < 'Z'; i++)
-                {
-                    yield return i;
-                }
-            }
-        }
+    public static class NumLetters
+    {
+        public static char[] Numbers = "1234567890".ToCharArray();
 
-        public IEnumerable<char> Numbers
-        {
-            get
-            {
-                foreach (int i in Enumerable.Range(0,10))
-                {
-                    yield return i.ToString().ToCharArray()[0];
-                }
-            }
-        } 
+        public static char[] Letters = "qQwWeErRtTyYuUiIoOpPaAsSdDfFgGhHjJkKlLzZxXcCvVbBnNmM".ToCharArray();
+
     }
     public class TheCell
     {
@@ -128,13 +191,13 @@ namespace ExcelOpenXmlReader
         public object Value { get; set; }
         public string ColumnName { get; set; }
         public Type Type { get; set; }
-        private NumLetters NumLetters;
+        
 
         
         public TheCell(Cell cell, List<string> SharedStrings)
         {
             
-            NumLetters = new NumLetters();
+            
             ParseCellName(cell.CellReference);
             Column = ExcelColumnNameToNumber(ColumnName);
             ParseCellValue(cell, SharedStrings);
@@ -162,9 +225,15 @@ namespace ExcelOpenXmlReader
                 }
                 else if (cell.DataType == CellValues.Boolean)
                 {
-                    Debugger.Break();
-                    Value =  System.DBNull.Value;
-                    Type = typeof (System.DBNull);
+                    Type = typeof(System.DBNull);
+                    if (cell.CellValue.InnerText == "0")
+                        Value = false;
+                    else if (cell.CellValue.InnerText == "1")
+                        Value = true;
+                    else
+                    {
+                        Debugger.Break();
+                    }
 
                 }
                 else if (cell.DataType == CellValues.Number)

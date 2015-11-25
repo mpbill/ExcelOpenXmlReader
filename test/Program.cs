@@ -13,10 +13,7 @@ namespace test
     {
         static void Main(string[] args)
         {
-            ExcelOpenXmlReader.ExcelOpenXmlReader reader =
-                new ExcelOpenXmlReader.ExcelOpenXmlReader(
-                    @"D:\tempGitRepository\Projects\DanEmailGenerator\ABFS_EmailGeneratorUnitTest\110515-111915.xlsm");
-            
+            OpenXmlWorkbook wb = new OpenXmlWorkbook("NorthwindPlus.xlsx");
         }
     }
 }

@@ -8,3 +8,13 @@ c:\users\michael\documents\visual studio 2015\Projects\ExcelOpenXmlReader\test\b
 c:\users\michael\documents\visual studio 2015\Projects\ExcelOpenXmlReader\test\obj\Debug\test.csprojResolveAssemblyReference.cache
 c:\users\michael\documents\visual studio 2015\Projects\ExcelOpenXmlReader\test\obj\Debug\test.exe
 c:\users\michael\documents\visual studio 2015\Projects\ExcelOpenXmlReader\test\obj\Debug\test.pdb
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\test\bin\Debug\test.exe.config
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\test\bin\Debug\test.exe
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\test\bin\Debug\test.pdb
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\test\bin\Debug\DocumentFormat.OpenXml.dll
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\test\bin\Debug\ExcelOpenXmlReader.dll
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\test\bin\Debug\ExcelOpenXmlReader.pdb
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\test\bin\Debug\DocumentFormat.OpenXml.xml
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\test\obj\Debug\test.csprojResolveAssemblyReference.cache
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\test\obj\Debug\test.exe
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\test\obj\Debug\test.pdb

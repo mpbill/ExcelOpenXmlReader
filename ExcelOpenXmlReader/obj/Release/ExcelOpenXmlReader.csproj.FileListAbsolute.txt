@@ -1,0 +1,7 @@
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\ExcelOpenXmlReader\bin\Release\ExcelOpenXmlReader.dll
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\ExcelOpenXmlReader\bin\Release\ExcelOpenXmlReader.pdb
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\ExcelOpenXmlReader\bin\Release\DocumentFormat.OpenXml.dll
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\ExcelOpenXmlReader\bin\Release\DocumentFormat.OpenXml.xml
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\ExcelOpenXmlReader\obj\Release\ExcelOpenXmlReader.dll
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\ExcelOpenXmlReader\obj\Release\ExcelOpenXmlReader.pdb
+C:\Users\mb659v\Documents\Visual Studio 2015\Projects\ExcelOpenXmlReader\ExcelOpenXmlReader\obj\Release\ExcelOpenXmlReader.csprojResolveAssemblyReference.cache
